@@ -4,7 +4,7 @@
 	branch = master
 [submodule "etl"]
 	path = etl
-	url = https://github.com/wichtounet/etl.git
+	url = https://github.com/niciuffo/etl.git
 	branch = master
 [submodule "mnist"]
 	path = mnist
