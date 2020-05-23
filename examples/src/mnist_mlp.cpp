@@ -5,8 +5,8 @@
 //  http://opensource.org/licenses/MIT)
 //=======================================================================
 
-#include "dll/neural/dense_layer.hpp"
-#include "dll/neural/dropout_layer.hpp"
+#include "dll/neural/dense/dense_layer.hpp"
+#include "dll/neural/dropout/dropout_layer.hpp"
 #include "dll/network.hpp"
 #include "dll/datasets.hpp"
 
@@ -40,9 +40,6 @@ int main(int /*argc*/, char* /*argv*/ []) {
 
     // Test the network on test set
     net->evaluate(dataset.test());
-
-    // Show where the time was spent
-    dll::dump_timers_pretty();
 
     return 0;
 }
