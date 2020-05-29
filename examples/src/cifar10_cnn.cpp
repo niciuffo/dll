@@ -7,6 +7,7 @@
 
 #define ETL_COUNTERS
 #define ETL_GPU_TOOLS
+#define PROFILER
 
 #include <iostream>
 #include <chrono>
@@ -18,7 +19,9 @@
 #include "dll/network.hpp"
 #include "dll/datasets.hpp"
 
+#ifdef PROFILER
 #include <cuda_profiler_api.h>
+#endif
 
 int main(int /*argc*/, char* /*argv*/ []) {
     // Load the dataset
@@ -48,9 +51,15 @@ int main(int /*argc*/, char* /*argv*/ []) {
 
     dbn->display();
 
+    #ifdef PROFILER
     cudaProfilerStart();
+    #endif
+
     dbn->fine_tune(dataset.train(), 5);
+
+    #ifdef PROFILER
     cudaProfilerStop();
+    #endif
 
     dbn->evaluate(dataset.test());
 
