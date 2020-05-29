@@ -51,6 +51,8 @@ struct standard_rbm : public rbm_base<Parent, Desc> {
     static_assert(visible_unit != unit_type::SOFTMAX, "Softmax Visible units are not support");
     static_assert(hidden_unit != unit_type::GAUSSIAN, "Gaussian hidden units are not supported");
 
+    std::shared_ptr<void*> states; ///< The states for random number generaton
+
     /*!
      * \brief Construct empty standard_rbm
      */
@@ -60,6 +62,8 @@ struct standard_rbm : public rbm_base<Parent, Desc> {
             visible_unit == unit_type::GAUSSIAN && is_relu(hidden_unit) ? 1e-5
                                                                         : visible_unit == unit_type::GAUSSIAN || is_relu(hidden_unit) ? 1e-3
                                                                                                                                       : /* Only ReLU and Gaussian Units needs lower rate */ 1e-1;
+
+        states  = std::make_shared<void*>();
     }
 
     //Energy functions
@@ -520,7 +524,7 @@ private:
             }
 
             if constexpr (P && S && hidden_unit == unit_type::RELU) {
-                h_s = max(logistic_noise(b + (v_a * w)), 0.0);
+                h_s = max(state_logistic_noise(b + (v_a * w), states), 0.0);
             }
 
             if constexpr (P && S && hidden_unit == unit_type::RELU1) {
@@ -542,7 +546,7 @@ private:
             }
 
             if constexpr (!P && S && hidden_unit == unit_type::RELU) {
-                h_s = max(logistic_noise(b + (v_a * w)), 0.0);
+                h_s = max(state_logistic_noise(b + (v_a * w), states), 0.0);
             }
 
             if constexpr (!P && S && hidden_unit == unit_type::RELU1) {
@@ -573,7 +577,7 @@ private:
     }
 
     template <bool P = true, bool S = true, typename H, typename V, typename C, typename W>
-    static void std_activate_visible(const H&, const H& h_s, V&& v_a, V&& v_s, const C& c, const W& w) {
+    void std_activate_visible(const H&, const H& h_s, V&& v_a, V&& v_s, const C& c, const W& w) const {
         dll::auto_timer timer("rbm:std:activate_visible");
 
         using namespace etl;
@@ -603,7 +607,7 @@ private:
         }
 
         if constexpr (!P && S && visible_unit == unit_type::RELU) {
-            v_s = logistic_noise(max(c + (w * h_s), 0.0));
+            v_s = state_logistic_noise(max(c + (w * h_s), 0.0), states);
         }
 
         // NaN Checks
@@ -618,39 +622,35 @@ private:
     }
 
     template <bool P = true, bool S = true, typename H1, typename H2, typename V, typename B, typename W>
-    static void batch_std_activate_hidden(H1&& h_a, H2&& h_s, const V& v_a, const V&, const B& b, const W& w) {
+    void batch_std_activate_hidden(H1&& h_a, H2&& h_s, const V& v_a, const V&, const B& b, const W& w) const {
         dll::auto_timer timer("rbm:std:batch_activate_hidden");
 
         using namespace etl;
 
-        const auto Batch = etl::dim<0>(h_a);
+        [[maybe_unused]] const auto Batch = etl::dim<0>(h_a);
 
         cpp_assert(etl::dim<0>(h_s) == Batch && etl::dim<0>(v_a) == Batch, "The number of batch must be consistent");
 
         // Compute activation probabilities
 
         if constexpr (P && hidden_unit == unit_type::BINARY) {
-            h_a = etl::sigmoid(rep_l(b, Batch) + v_a * w);
+            h_a = etl::sigmoid(bias_add_2d(v_a * w, b));
         }
 
         if constexpr (P && hidden_unit == unit_type::RELU) {
-            h_a = max(rep_l(b, Batch) + v_a * w, 0.0);
+            h_a = max(bias_add_2d(v_a * w, b), 0.0);
         }
 
         if constexpr (P && hidden_unit == unit_type::RELU1) {
-            h_a = min(max(rep_l(b, Batch) + v_a * w, 0.0), 1.0);
+            h_a = min(max(bias_add_2d(v_a * w, b), 0.0), 1.0);
         }
 
         if constexpr (P && hidden_unit == unit_type::RELU6) {
-            h_a = min(max(rep_l(b, Batch) + v_a * w, 0.0), 6.0);
+            h_a = min(max(bias_add_2d(v_a * w, b), 0.0), 6.0);
         }
 
         if constexpr (P && hidden_unit == unit_type::SOFTMAX) {
-            auto x = etl::force_temporary(rep_l(b, Batch) + v_a * w);
-
-            for (size_t b = 0; b < Batch; ++b) {
-                h_a(b) = stable_softmax(x(b));
-            }
+            h_a = stable_softmax(bias_add_2d(v_a * w, b));
         }
 
         // Samples values from the probabilities
@@ -660,15 +660,15 @@ private:
         }
 
         if constexpr (P && S && hidden_unit == unit_type::RELU) {
-            h_s = max(logistic_noise(rep_l(b, Batch) + v_a * w), 0.0);
+            h_s = max(state_logistic_noise(bias_add_2d(v_a * w, b), states), 0.0);
         }
 
         if constexpr (P && S && hidden_unit == unit_type::RELU1) {
-            h_s = min(max(ranged_noise(rep_l(b, Batch) + v_a * w, 1.0), 0.0), 1.0);
+            h_s = min(max(ranged_noise(bias_add_2d(v_a * w, b), 1.0), 0.0), 1.0);
         }
 
         if constexpr (P && S && hidden_unit == unit_type::RELU6) {
-            h_s = min(max(ranged_noise(rep_l(b, Batch) + v_a * w, 6.0), 0.0), 6.0);
+            h_s = min(max(ranged_noise(bias_add_2d(v_a * w, b), 6.0), 0.0), 6.0);
         }
 
         if constexpr (P && S && hidden_unit == unit_type::SOFTMAX) {
@@ -680,26 +680,26 @@ private:
         // Sample values directly from the input
 
         if constexpr (!P && S && hidden_unit == unit_type::BINARY) {
-            h_s = bernoulli(etl::sigmoid(rep_l(b, Batch) + v_a * w));
+            h_s = bernoulli(etl::sigmoid(bias_add_2d(v_a * w, b)));
         }
 
         if constexpr (!P && S && hidden_unit == unit_type::RELU) {
-            h_s = max(logistic_noise(rep_l(b, Batch) + v_a * w), 0.0);
+            h_s = max(state_logistic_noise(bias_add_2d(v_a * w, b), states), 0.0);
         }
 
         if constexpr (!P && S && hidden_unit == unit_type::RELU1) {
-            h_s = min(max(ranged_noise(rep_l(b, Batch) + v_a * w, 1.0), 0.0), 1.0);
+            h_s = min(max(ranged_noise(bias_add_2d(v_a * w, b), 1.0), 0.0), 1.0);
         }
 
         if constexpr (!P && S && hidden_unit == unit_type::RELU6) {
-            h_s = min(max(ranged_noise(rep_l(b, Batch) + v_a * w, 6.0), 0.0), 6.0);
+            h_s = min(max(ranged_noise(bias_add_2d(v_a * w, b), 6.0), 0.0), 6.0);
         }
 
         if constexpr (!P && S && hidden_unit == unit_type::SOFTMAX) {
-            auto x = etl::force_temporary(rep_l(b, Batch) + v_a * w);
+            auto x = etl::force_temporary(stable_softmax(bias_add_2d(v_a * w, b)));
 
             for (size_t b = 0; b < Batch; ++b) {
-                h_s(b) = one_if_max(stable_softmax(x(b)));
+                h_s(b) = one_if_max(x(b));
             }
         }
 
@@ -715,41 +715,41 @@ private:
     }
 
     template <bool P = true, bool S = true, typename H, typename V, typename C, typename W>
-    static void batch_std_activate_visible(const H&, const H& h_s, V&& v_a, V&& v_s, const C& c, const W& w) {
+    void batch_std_activate_visible(const H&, const H& h_s, V&& v_a, V&& v_s, const C& c, const W& w) const {
         dll::auto_timer timer("rbm:std:batch_activate_visible");
 
         using namespace etl;
 
-        const auto Batch = etl::dim<0>(v_s);
+        [[maybe_unused]] const auto Batch = etl::dim<0>(v_s);
 
         cpp_assert(etl::dim<0>(h_s) == Batch && etl::dim<0>(v_a) == Batch, "The number of batch must be consistent");
 
         // Compute the visible activation probabilities
 
         if constexpr (P && visible_unit == unit_type::BINARY) {
-            v_a = etl::sigmoid(rep_l(c, Batch) + transpose(w * transpose(h_s)));
+            v_a = etl::sigmoid(bias_add_2d(transpose(w * transpose(h_s)), c));
         }
 
         if constexpr (P && visible_unit == unit_type::GAUSSIAN) {
-            v_a = rep_l(c, Batch) + transpose(w * transpose(h_s));
+            v_a = bias_add_2d(transpose(w * transpose(h_s)), c);
         }
 
         if constexpr (P && visible_unit == unit_type::RELU) {
-            v_a = max(rep_l(c, Batch) + transpose(w * transpose(h_s)), 0.0);
+            v_a = max(bias_add_2d(transpose(w * transpose(h_s)), c), 0.0);
         }
 
         // Sample the visible values from the input
 
         if constexpr (!P && S && visible_unit == unit_type::BINARY) {
-            v_s = bernoulli(etl::sigmoid(rep_l(c, Batch) + transpose(w * transpose(h_s))));
+            v_s = bernoulli(etl::sigmoid(bias_add_2d(transpose(w * transpose(h_s)), c)));
         }
 
         if constexpr (!P && S && visible_unit == unit_type::GAUSSIAN) {
-            v_s = normal_noise(rep_l(c, Batch) + transpose(w * transpose(h_s)));
+            v_s = normal_noise(bias_add_2d(transpose(w * transpose(h_s)), c));
         }
 
         if constexpr (!P && S && visible_unit == unit_type::RELU) {
-            v_s = logistic_noise(max(rep_l(c, Batch) + transpose(w * transpose(h_s)), 0.0));
+            v_s = state_logistic_noise(max(bias_add_2d(transpose(w * transpose(h_s)), c), 0.0), states);
         }
 
         // NaN Checks
