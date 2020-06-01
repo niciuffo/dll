@@ -520,7 +520,7 @@ private:
             // Sample the values from the probs
 
             if constexpr (P && S && hidden_unit == unit_type::BINARY) {
-                h_s = bernoulli(h_a);
+                h_s = state_bernoulli(h_a, states);
             }
 
             if constexpr (P && S && hidden_unit == unit_type::RELU) {
@@ -542,7 +542,7 @@ private:
             // Sample the values directly from the input
 
             if constexpr (!P && S && hidden_unit == unit_type::BINARY) {
-                h_s = bernoulli(etl::sigmoid(b + (v_a * w)));
+                h_s = state_bernoulli(etl::sigmoid(b + (v_a * w)), states);
             }
 
             if constexpr (!P && S && hidden_unit == unit_type::RELU) {
@@ -599,7 +599,7 @@ private:
         // Sample the visible values from the input
 
         if constexpr (!P && S && visible_unit == unit_type::BINARY) {
-            v_s = bernoulli(etl::sigmoid(c + (w * h_s)));
+            v_s = state_bernoulli(etl::sigmoid(c + (w * h_s)), states);
         }
 
         if constexpr (!P && S && visible_unit == unit_type::GAUSSIAN) {
@@ -656,7 +656,7 @@ private:
         // Samples values from the probabilities
 
         if constexpr (P && S && hidden_unit == unit_type::BINARY) {
-            h_s = bernoulli(h_a);
+            h_s = state_bernoulli(h_a, states);
         }
 
         if constexpr (P && S && hidden_unit == unit_type::RELU) {
@@ -672,15 +672,13 @@ private:
         }
 
         if constexpr (P && S && hidden_unit == unit_type::SOFTMAX) {
-            for (size_t b = 0; b < Batch; ++b) {
-                h_s(b) = one_if_max(h_a(b));
-            }
+            h_s = one_if_max_sub(h_a);
         }
 
         // Sample values directly from the input
 
         if constexpr (!P && S && hidden_unit == unit_type::BINARY) {
-            h_s = bernoulli(etl::sigmoid(bias_add_2d(v_a * w, b)));
+            h_s = state_bernoulli(etl::sigmoid(bias_add_2d(v_a * w, b)), states);
         }
 
         if constexpr (!P && S && hidden_unit == unit_type::RELU) {
@@ -698,9 +696,7 @@ private:
         if constexpr (!P && S && hidden_unit == unit_type::SOFTMAX) {
             auto x = etl::force_temporary(stable_softmax(bias_add_2d(v_a * w, b)));
 
-            for (size_t b = 0; b < Batch; ++b) {
-                h_s(b) = one_if_max(x(b));
-            }
+            h_s = one_if_max_sub(x);
         }
 
         // NaN Checks
@@ -741,7 +737,7 @@ private:
         // Sample the visible values from the input
 
         if constexpr (!P && S && visible_unit == unit_type::BINARY) {
-            v_s = bernoulli(etl::sigmoid(bias_add_2d(transpose(w * transpose(h_s)), c)));
+            v_s = state_bernoulli(etl::sigmoid(bias_add_2d(transpose(w * transpose(h_s)), c)), states);
         }
 
         if constexpr (!P && S && visible_unit == unit_type::GAUSSIAN) {
