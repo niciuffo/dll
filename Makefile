@@ -8,7 +8,8 @@ include make-utils/cpp-utils.mk
 # Use C++20j
 $(eval $(call use_cpp20))
 
-CXX_FLAGS += -pedantic -Werror -ftemplate-backtrace-limit=0
+#CXX_FLAGS += -pedantic -Werror -ftemplate-backtrace-limit=0
+CXX_FLAGS += -pedantic -ftemplate-backtrace-limit=0
 
 # If asked, use libcxx (optional)
 ifneq (,$(DLL_LIBCXX))
@@ -354,6 +355,9 @@ release_workbench: release/bin/dll_sgd_perf release/bin/dll_conv_sgd_perf releas
 debug_examples: debug/bin/dll_mnist_mlp debug/bin/dll_mnist_cnn debug/bin/dll_mnist_ae debug/bin/dll_mnist_deep_ae debug/bin/dll_mnist_dbn debug/bin/dll_cifar10_cnn
 release_debug_examples: release_debug/bin/dll_mnist_mlp release_debug/bin/dll_mnist_cnn release_debug/bin/dll_mnist_ae release_debug/bin/dll_mnist_deep_ae release_debug/bin/dll_mnist_dbn release_debug/bin/dll_cifar10_cnn
 release_examples: release/bin/dll_mnist_mlp release/bin/dll_mnist_cnn release/bin/dll_mnist_ae release/bin/dll_mnist_deep_ae release/bin/dll_mnist_dbn release/bin/dll_cifar10_cnn
+
+# Quicker build for individual examples
+release_cifar10_cnn: release/bin/dll_cifar10_cnn
 
 # Build sets for perf examples
 debug_examples_perf: debug/bin/dll_mnist_mlp_perf debug/bin/dll_mnist_cnn_perf debug/bin/dll_mnist_ae_perf debug/bin/dll_mnist_deep_ae_perf debug/bin/dll_mnist_dbn_perf
