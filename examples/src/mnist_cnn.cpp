@@ -5,6 +5,9 @@
 //  http://opensource.org/licenses/MIT)
 //=======================================================================
 
+#define ETL_COUNTERS
+#define ETL_GPU_POOL
+
 #include "dll/neural/conv/conv_layer.hpp"
 #include "dll/neural/dense/dense_layer.hpp"
 #include "dll/pooling/mp_layer.hpp"
@@ -29,6 +32,8 @@ int main(int /*argc*/, char* /*argv*/ []) {
         , dll::updater<dll::updater_type::NADAM>     // Momentum
         , dll::batch_size<200>                       // The mini-batch size
         , dll::shuffle                               // Shuffle the dataset before each epoch
+        , dll::no_batch_display
+        , dll::no_epoch_error
     >::network_t;
 
     auto net = std::make_unique<network_t>();
