@@ -7,6 +7,7 @@
 
 #define ETL_COUNTERS
 #define ETL_GPU_TOOLS
+#define ETL_GPU_POOL
 #define PROFILER
 
 #include <iostream>
