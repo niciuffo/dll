@@ -8,7 +8,7 @@
 #define ETL_COUNTERS
 #define ETL_GPU_TOOLS
 #define ETL_GPU_POOL
-#define PROFILER
+//#define PROFILER
 
 #include <iostream>
 #include <chrono>
@@ -26,7 +26,7 @@
 
 int main(int /*argc*/, char* /*argv*/ []) {
     // Load the dataset
-    auto dataset = dll::make_cifar10_dataset(dll::batch_size<100>{}, dll::scale_pre<255>{});
+    auto dataset = dll::make_cifar10_dataset(dll::batch_size<256>{}, dll::scale_pre<255>{});
 
     using dbn_t = dll::dbn_desc<
             dll::dbn_layers<
@@ -38,7 +38,7 @@ int main(int /*argc*/, char* /*argv*/ []) {
                     dll::dense_layer<64, 10, dll::softmax>
             >,
             dll::updater<dll::updater_type::MOMENTUM>,
-            dll::batch_size<100>,
+            dll::batch_size<256>,
             dll::no_batch_display,
             dll::no_epoch_error
     >::dbn_t;
