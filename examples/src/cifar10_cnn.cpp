@@ -56,7 +56,7 @@ int main(int /*argc*/, char* /*argv*/ []) {
     cudaProfilerStart();
     #endif
 
-    dbn->fine_tune(dataset.train(), 5);
+    dbn->fine_tune(dataset.train(), 20);
 
     #ifdef PROFILER
     cudaProfilerStop();
