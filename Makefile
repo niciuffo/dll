@@ -344,6 +344,8 @@ $(eval $(call add_executable,dll_cifar10_cnn_med,examples/src/cifar10_cnn_med.cp
 $(eval $(call add_executable_set,dll_cifar10_cnn_med,dll_cifar10_cnn_med))
 $(eval $(call add_executable,dll_cifar10_cnn_big,examples/src/cifar10_cnn_big.cpp))
 $(eval $(call add_executable_set,dll_cifar10_cnn_big,dll_cifar10_cnn_big))
+$(eval $(call add_executable,dll_bench,examples/src/bench.cpp))
+$(eval $(call add_executable_set,dll_bench,dll_bench))
 
 $(eval $(call add_executable_set,dll_perf_paper,dll_perf_paper))
 $(eval $(call add_executable_set,dll_perf_paper_conv,dll_perf_paper_conv))
@@ -362,6 +364,7 @@ release_examples: release/bin/dll_mnist_mlp release/bin/dll_mnist_cnn release/bi
 
 # Quicker build for individual examples
 release_cifar10_cnn: release/bin/dll_cifar10_cnn_small release/bin/dll_cifar10_cnn_med release/bin/dll_cifar10_cnn_big
+release_bench_ex: release/bin/dll_bench
 
 # Build sets for perf examples
 debug_examples_perf: debug/bin/dll_mnist_mlp_perf debug/bin/dll_mnist_cnn_perf debug/bin/dll_mnist_ae_perf debug/bin/dll_mnist_deep_ae_perf debug/bin/dll_mnist_dbn_perf
