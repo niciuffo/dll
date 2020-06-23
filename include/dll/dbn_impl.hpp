@@ -131,9 +131,10 @@ public:
     using const_for_each_impl_t      = dbn_detail::for_each_impl<const this_type, layers_t::size, std::make_index_sequence<layers_t::size>>;
     using const_for_each_pair_impl_t = dbn_detail::for_each_impl<const this_type, layers_t::size, std::make_index_sequence<layers_t::size - 1>>;
 
-    static constexpr size_t layers         = layers_t::size;     ///< The number of layers
-    static constexpr size_t batch_size     = desc::BatchSize;    ///< The batch size (for finetuning)
-    static constexpr size_t big_batch_size = desc::BigBatchSize; ///< The number of pretraining batch to do at once
+    static inline constexpr size_t layers         = layers_t::size;     ///< The number of layers
+    static inline constexpr size_t batch_size     = desc::BatchSize;    ///< The batch size (for finetuning)
+    static inline constexpr size_t big_batch_size = desc::BigBatchSize; ///< The number of pretraining batch to do at once
+
     static constexpr auto loss             = desc::Loss;         ///< The loss function
     static constexpr auto updater          = desc::Updater;      ///< The Updater type
     static constexpr auto early            = desc::Early;        ///< The Early Stopping stragy
@@ -194,6 +195,9 @@ public:
 
     template<size_t B>
     using rbm_ingenerator_fast_inner_t = inmemory_data_generator_desc<dll::batch_size<B>, dll::big_batch_size<big_batch_size>, dll::autoencoder>;
+
+    template<size_t B>
+    using rbm_ingenerator_fast_single_inner_t = inmemory_single_data_generator_desc<dll::batch_size<B>, dll::big_batch_size<big_batch_size>, dll::autoencoder>;
 
     template<size_t B>
     using rbm_generator_fast_inner_t = std::conditional_t<
@@ -259,6 +263,13 @@ private:
         static_assert(decay_layer_traits<layer_type<L>>::is_rbm_layer(), "Invalid use of get_rbm_generator_inner_desc");
 
         return rbm_ingenerator_fast_inner_t<layer_type<L>::batch_size>{};
+    }
+
+    template<size_t L = rbm_layer_n>
+    auto get_rbm_ingenerator_single_inner_desc(){
+        static_assert(decay_layer_traits<layer_type<L>>::is_rbm_layer(), "Invalid use of get_rbm_generator_inner_desc");
+
+        return rbm_ingenerator_fast_single_inner_t<layer_type<L>::batch_size>{};
     }
 
     template <size_t L, cpp_enable_iff((L < layers - 1) && decay_layer_traits<layer_type<L>>::is_rbm_layer())>
@@ -2137,6 +2148,9 @@ public:
         // Set the generator in test mode
         generator.set_test();
 
+        // Make sure all the data is available at once
+        generator.prepare_epoch();
+
         double error = 0.0;
         double loss  = 0.0;
 
@@ -2399,9 +2413,9 @@ private:
 
         // Prepare a generator to hold the data
         auto next_generator = prepare_generator(
-            two, two,
-            generator.size(), output_size(),
-            get_rbm_ingenerator_inner_desc());
+            two,
+            generator.size(),
+            get_rbm_ingenerator_single_inner_desc());
 
         next_generator->set_safe();
 
@@ -2414,7 +2428,6 @@ private:
             auto next_batch = next_layer.train_forward_batch(batch);
 
             next_generator->set_data_batch(i, next_batch);
-            next_generator->set_label_batch(i, next_batch);
 
             i += etl::dim<0>(next_batch);
 
@@ -2459,11 +2472,14 @@ private:
 
                 // Prepare a generator to hold the data
                 auto next_generator = prepare_generator(
-                    one, one,
-                    generator.size(), output_size(),
-                    get_rbm_ingenerator_inner_desc());
+                    one,
+                    generator.size(), 
+                    get_rbm_ingenerator_single_inner_desc());
 
                 next_generator->set_safe();
+
+                // Prepare the data of the next generator
+                next_generator->prepare_epoch();
 
                 // Compute the input of the next layer
                 // using batch activation
@@ -2473,7 +2489,6 @@ private:
                     auto next_batch = layer.train_forward_batch(generator.data_batch());
 
                     next_generator->set_data_batch(i, next_batch);
-                    next_generator->set_label_batch(i, next_batch);
 
                     i += etl::dim<0>(next_batch);
 
@@ -2894,10 +2909,5 @@ private:
 
 #endif //DLL_SVM_SUPPORT
 };
-
-//Allow odr-use of the constexpr static members
-
-template <typename Desc>
-const size_t dbn<Desc>::layers;
 
 } //end of namespace dll

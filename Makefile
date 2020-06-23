@@ -8,8 +8,7 @@ include make-utils/cpp-utils.mk
 # Use C++20j
 $(eval $(call use_cpp20))
 
-#CXX_FLAGS += -pedantic -Werror -ftemplate-backtrace-limit=0
-CXX_FLAGS += -pedantic -ftemplate-backtrace-limit=0
+CXX_FLAGS += -pedantic -Werror -ftemplate-backtrace-limit=0
 
 # If asked, use libcxx (optional)
 ifneq (,$(DLL_LIBCXX))
@@ -29,7 +28,7 @@ OPENCV_LD_FLAGS=-lopencv_core -lopencv_imgproc -lopencv_highgui
 LIBSVM_LD_FLAGS=-lsvm
 TEST_LD_FLAGS=$(LIBSVM_LD_FLAGS)
 
-CXX_FLAGS += -DETL_PARALLEL -DETL_VECTORIZE_FULL
+CXX_FLAGS += -DETL_PARALLEL -DETL_VECTORIZE_FULL -DETL_RELAXED
 
 # Use the recommended limit
 CXX_FLAGS += -ftemplate-depth=1024
@@ -322,6 +321,8 @@ $(eval $(call add_executable,dll_compile_hybrid_crbm,workbench/src/compile_hybri
 # Examples
 $(eval $(call add_executable,dll_mnist_dbn,examples/src/mnist_dbn.cpp))
 $(eval $(call add_executable_set,dll_mnist_dbn,dll_mnist_dbn))
+$(eval $(call add_executable,dll_mnist_cdbn,examples/src/mnist_cdbn.cpp))
+$(eval $(call add_executable_set,dll_mnist_cdbn,dll_mnist_cdbn))
 $(eval $(call add_executable,dll_mnist_mlp,examples/src/mnist_mlp.cpp))
 $(eval $(call add_executable_set,dll_mnist_mlp,dll_mnist_mlp))
 $(eval $(call add_executable,dll_mnist_cnn,examples/src/mnist_cnn.cpp))
@@ -358,18 +359,18 @@ release_debug_workbench: release_debug/bin/dll_sgd_perf release_debug/bin/dll_co
 release_workbench: release/bin/dll_sgd_perf release/bin/dll_conv_sgd_perf release/bin/dll_imagenet_perf release/bin/dll_sgd_debug release/bin/dll_dae release/bin/dll_rbm_dae release/bin/dll_perf_paper release/bin/dll_perf_paper_conv release/bin/dll_perf_conv release/bin/dll_conv_types release/bin/dll_dyn_perf
 
 # Build sets for the examples
-debug_examples: debug/bin/dll_mnist_mlp debug/bin/dll_mnist_cnn debug/bin/dll_mnist_ae debug/bin/dll_mnist_deep_ae debug/bin/dll_mnist_dbn debug/bin/dll_cifar10_cnn_small debug/bin/dll_cifar10_cnn_med debug/bin/dll_cifar10_cnn_big
-release_debug_examples: release_debug/bin/dll_mnist_mlp release_debug/bin/dll_mnist_cnn release_debug/bin/dll_mnist_ae release_debug/bin/dll_mnist_deep_ae release_debug/bin/dll_mnist_dbn release_debug/bin/dll_cifar10_cnn_small release_debug/bin/dll_cifar10_cnn_med release_debug/bin/dll_cifar10_cnn_big
-release_examples: release/bin/dll_mnist_mlp release/bin/dll_mnist_cnn release/bin/dll_mnist_ae release/bin/dll_mnist_deep_ae release/bin/dll_mnist_dbn release/bin/dll_cifar10_cnn_small release/bin/dll_cifar10_cnn_med release/bin/dll_cifar10_cnn_big
+debug_examples: debug/bin/dll_mnist_mlp debug/bin/dll_mnist_cnn debug/bin/dll_mnist_ae debug/bin/dll_mnist_deep_ae debug/bin/dll_mnist_dbn debug/bin/dll_cifar10_cnn_small debug/bin/dll_cifar10_cnn_med debug/bin/dll_cifar10_cnn_big debug/bin/dll_mnist_cdbn
+release_debug_examples: release_debug/bin/dll_mnist_mlp release_debug/bin/dll_mnist_cnn release_debug/bin/dll_mnist_ae release_debug/bin/dll_mnist_deep_ae release_debug/bin/dll_mnist_dbn release_debug/bin/dll_cifar10_cnn_small release_debug/bin/dll_cifar10_cnn_med release_debug/bin/dll_cifar10_cnn_big release_debug/bin/dll_mnist_cdbn
+release_examples: release/bin/dll_mnist_mlp release/bin/dll_mnist_cnn release/bin/dll_mnist_ae release/bin/dll_mnist_deep_ae release/bin/dll_mnist_dbn release/bin/dll_cifar10_cnn_small release/bin/dll_cifar10_cnn_med release/bin/dll_cifar10_cnn_big release/bin/dll_mnist_cdbn
 
 # Quicker build for individual examples
 release_cifar10_cnn: release/bin/dll_cifar10_cnn_small release/bin/dll_cifar10_cnn_med release/bin/dll_cifar10_cnn_big
 release_bench_ex: release/bin/dll_bench
 
 # Build sets for perf examples
-debug_examples_perf: debug/bin/dll_mnist_mlp_perf debug/bin/dll_mnist_cnn_perf debug/bin/dll_mnist_ae_perf debug/bin/dll_mnist_deep_ae_perf debug/bin/dll_mnist_dbn_perf
-release_debug_examples_perf: release_debug/bin/dll_mnist_mlp_perf release_debug/bin/dll_mnist_cnn_perf release_debug/bin/dll_mnist_ae_perf release_debug/bin/dll_mnist_deep_ae_perf release_debug/bin/dll_mnist_dbn_perf
-release_examples_perf: release/bin/dll_mnist_mlp_perf release/bin/dll_mnist_cnn_perf release/bin/dll_mnist_ae_perf release/bin/dll_mnist_deep_ae_perf release/bin/dll_mnist_dbn_perf
+debug_examples_perf: debug/bin/dll_mnist_mlp_perf debug/bin/dll_mnist_cnn_perf debug/bin/dll_mnist_cnn_bn_perf debug/bin/dll_mnist_ae_perf debug/bin/dll_mnist_deep_ae_perf debug/bin/dll_mnist_dbn_perf debug/bin/dll_mnist_cdbn_perf
+release_debug_examples_perf: release_debug/bin/dll_mnist_mlp_perf release_debug/bin/dll_mnist_cnn_perf release_debug/bin/dll_mnist_cnn_bn_perf release_debug/bin/dll_mnist_ae_perf release_debug/bin/dll_mnist_deep_ae_perf release_debug/bin/dll_mnist_dbn_perf release_debug/bin/dll_mnist_cdbn_perf
+release_examples_perf: release/bin/dll_mnist_mlp_perf release/bin/dll_mnist_cnn_perf release/bin/dll_mnist_cnn_bn_perf release/bin/dll_mnist_ae_perf release/bin/dll_mnist_deep_ae_perf release/bin/dll_mnist_dbn_perf release/bin/dll_mnist_cdbn_perf
 
 debug: debug_dllp debug_dll_test_unit debug_dll_test_perf debug_dll_test_misc debug_dll_view debug_examples
 release_debug: release_debug_dllp release_debug_dll_test_unit release_debug_dll_test_perf release_debug_dll_test_misc release_debug_dll_view release_debug_examples
