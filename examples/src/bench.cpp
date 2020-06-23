@@ -57,6 +57,8 @@ double cifar10(int n) {
 
     dbn->evaluate(dataset.test());
 
+    etl::dump_counters_pretty();
+
     auto duration = duration_cast<std::chrono::milliseconds>(stop - start).count();
 
     std::cout << duration << std::endl;
@@ -95,6 +97,8 @@ double mlp(int n) {
 
     // Test the network on test set
     net->evaluate(dataset.test());
+
+    etl::dump_counters_pretty();
 
     auto duration = duration_cast<std::chrono::milliseconds>(stop - start).count();
 
