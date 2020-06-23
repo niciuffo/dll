@@ -103,26 +103,37 @@ double mlp(int n) {
 }
 
 int main(int /*argc*/, char* /*argv*/ []) {
-    auto const ITR = 3;
+    auto const ITR = 10;
     auto const CIFAR10_EPOCHS = 10;
     auto const MLP_EPOCHS = 10;
 
+    std::vector<double> cifar10_times;
+    std::vector<double> mlp_times;
     double cifar10_mean = 0;
     double mlp_mean = 0;
 
-    std::cout << "cifar10" << std::endl;
     for (int i = 0; i < ITR; i++) {
-        cifar10_mean += cifar10(CIFAR10_EPOCHS);
+        auto time = cifar10(CIFAR10_EPOCHS);
+        cifar10_times.push_back(time);
+        cifar10_mean += time;
     }
 
-    std::cout << "mlp" << std::endl;
     for (int i = 0; i < ITR; i++) {
-        mlp_mean += mlp(MLP_EPOCHS);
+        auto time = mlp(MLP_EPOCHS);
+        mlp_times.push_back(time);
+        mlp_mean += time;
     }
 
     cifar10_mean /= ITR;
     mlp_mean /= ITR;
 
-    std::cout << "cifar10 mean after " << ITR << " iterations: " << cifar10_mean << std::endl;
+    std::cout << "cifar" << std::endl;
+    for (double t : cifar10_times)
+        std::cout << t << std::endl;
+    std::cout << "mean after " << ITR << " iterations: " << cifar10_mean << std::endl;
+
+    std::cout << "mlp" << std::endl;
+    for (double t : mlp_times)
+        std::cout << t << std::endl;
     std::cout << "mlp mean after " << ITR << " iterations: " << mlp_mean << std::endl;
 }
