@@ -103,7 +103,7 @@ double mlp(int n) {
 }
 
 int main(int /*argc*/, char* /*argv*/ []) {
-    auto const ITR = 10;
+    auto const ITR = 5;
     auto const CIFAR10_EPOCHS = 10;
     auto const MLP_EPOCHS = 10;
 
