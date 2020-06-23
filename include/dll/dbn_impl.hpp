@@ -2052,9 +2052,11 @@ public:
             if (cpp_unlikely(!full_batch)) {
                 auto sout = slice(out, 0, n);
 
-                std::tie(batch_loss, batch_error) = etl::ml::bce(sout, labels, -1.0f / (s * output_size()), 1.0f / (s * output_size()));
+                batch_loss  = (-1.0 / (s * output_size())) * sum((labels >> log(sout)) + ((1.0 - labels) >> log(1.0 - sout)));
+                batch_error = (1.0 / (s * output_size())) * asum(labels - sout);
             } else {
-                std::tie(batch_loss, batch_error) = etl::ml::bce(out, labels, -1.0f / (s * output_size()), 1.0f / (s * output_size()));
+                batch_loss  = (-1.0 / (s * output_size())) * sum((labels >> log(out)) + ((1.0 - labels) >> log(1.0 - out)));
+                batch_error = (1.0 / (s * output_size())) * asum(labels - output);
             }
         } else { // MEAN_SQUARED_ERROR
             dll::auto_timer timer("net:compute_loss:MSE");
