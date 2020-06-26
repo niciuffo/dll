@@ -9,10 +9,12 @@
 
 #include "mnist/mnist_reader.hpp"
 
+#define SCALE_FACTOR 4
+
 namespace dll {
 
-using mnist_example_t = etl::fast_dyn_matrix<float, 1, 28, 28>;
-using mnist_example_nc_t = etl::fast_dyn_matrix<float, 28, 28>;
+using mnist_example_t = etl::fast_dyn_matrix<float, 1, 28 * SCALE_FACTOR, 28 * SCALE_FACTOR>;
+using mnist_example_nc_t = etl::fast_dyn_matrix<float, 28 * SCALE_FACTOR, 28 * SCALE_FACTOR>;
 
 /*!
  * \brief Create a data generator around the MNIST train set
@@ -39,7 +41,7 @@ auto make_mnist_generator_train_impl(const std::string& folder, size_t start, si
     auto generator = prepare_generator(input, label, n, 10, dll::inmemory_data_generator_desc<Parameters..., dll::categorical>{});
 
     // Read all the necessary images
-    if(!mnist::read_mnist_image_file_flat(generator->input_cache, folder + "/train-images-idx3-ubyte", m, start)){
+    if(!mnist::read_mnist_image_file_flat(generator->input_cache, folder + "/train-images-idx3-ubyte", m, start, SCALE_FACTOR)){
         std::cerr << "Something went wrong, impossible to load MNIST training images" << std::endl;
         return generator;
     }
@@ -82,7 +84,7 @@ auto make_mnist_generator_test_impl(const std::string& folder, size_t start, siz
     auto generator = prepare_generator(input, label, n, 10, dll::inmemory_data_generator_desc<Parameters..., dll::categorical>{});
 
     // Read all the necessary images
-    if(!mnist::read_mnist_image_file_flat(generator->input_cache, folder + "/t10k-images-idx3-ubyte", m, start)){
+    if(!mnist::read_mnist_image_file_flat(generator->input_cache, folder + "/t10k-images-idx3-ubyte", m, start, SCALE_FACTOR)){
         std::cerr << "Something went wrong, impossible to load MNIST test images" << std::endl;
         return generator;
     }
