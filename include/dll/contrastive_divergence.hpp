@@ -108,15 +108,10 @@ void update_normal(RBM& rbm, Trainer& t) {
 
         t.q_local_t = decay_rate * t.q_local_t + (1.0 - decay_rate) * t.q_local_batch;
 
-        auto q_local_penalty = cost * (t.q_local_t - p);
+        auto q_local_penalty = -1 * cost * (t.q_local_t - p);
 
-        t.b_grad -= q_local_penalty;
-
-        for (size_t i = 0; i < num_hidden(rbm); ++i) {
-            for (size_t j = 0; j < num_visible(rbm); ++j) {
-                t.w_grad(j, i) -= q_local_penalty(i);
-            }
-        }
+        t.b_grad += q_local_penalty;
+        t.w_grad = bias_add_2d(t.w_grad, q_local_penalty);
     }
 
     //TODO the batch is not necessary full!
@@ -262,9 +257,8 @@ void compute_gradients_normal(InputBatch& input_batch, ExpectedBatch& expected_b
     cpp_assert(etl::size(t.v1) >= etl::size(input_batch), "Invalid input to compute_gradients_normal");
     cpp_assert(etl::size(t.vf) >= etl::size(expected_batch), "Invalid input to compute_gradients_normal");
 
-    const auto B          = etl::dim<0>(t.v1);
-    const size_t IB       = etl::dim<0>(input_batch);
-    const bool full_batch = (IB == RBM::batch_size);
+    const size_t IB         = etl::dim<0>(input_batch);
+    const bool   full_batch = (IB == RBM::batch_size);
 
     //Copy input/expected for computations
     if(cpp_likely(full_batch)){
@@ -308,15 +302,8 @@ void compute_gradients_normal(InputBatch& input_batch, ExpectedBatch& expected_b
 
         t.w_grad = batch_outer(t.vf, t.h1_a) - batch_outer(t.v2_a, t.h2_a);
 
-        t.b_grad = t.h1_a(0) - t.h2_a(0);
-        for (size_t b = 1; b < B; b++) {
-            t.b_grad += t.h1_a(b) - t.h2_a(b);
-        }
-
-        t.c_grad = t.vf(0) - t.v2_a(0);
-        for (size_t b = 1; b < B; b++) {
-            t.c_grad += t.vf(b) - t.v2_a(b);
-        }
+        t.b_grad = bias_batch_sum_2d(t.h1_a - t.h2_a);
+        t.c_grad = bias_batch_sum_2d(t.vf - t.v2_a);
     }
 }
 
@@ -348,7 +335,7 @@ void train_normal(InputBatch& input_batch, ExpectedBatch& expected_batch, rbm_tr
     t.q_global_batch = mean(t.h2_a);
 
     if constexpr (rbm_layer_traits<rbm_t>::sparsity_method() == sparsity_method::LOCAL_TARGET) {
-        t.q_local_batch = mean_l(t.h2_a);
+        t.q_local_batch = bias_batch_mean_2d(t.h2_a);
     }
 
     context.batch_sparsity = t.q_global_batch;
@@ -409,8 +396,8 @@ void compute_gradients_conv(InputBatch& input_batch, ExpectedBatch& expected_bat
     {
         dll::auto_timer timer("cd:batch_compute_gradients_conv");
 
-        t.w_pos = conv_4d_valid_filter_flipped(t.vf, t.h1_a);
-        t.w_neg = conv_4d_valid_filter_flipped(t.v2_a, t.h2_a);
+        t.w_pos = etl::ml::convolution_backward_filter(t.vf, t.h1_a);
+        t.w_neg = etl::ml::convolution_backward_filter(t.v2_a, t.h2_a);
     }
 }
 
@@ -434,8 +421,8 @@ void train_convolutional(InputBatch& input_batch, ExpectedBatch& expected_batch,
 
     //Compute the gradients
     t.w_grad = t.w_pos - t.w_neg;
-    t.b_grad = mean_r(sum_l(t.h1_a - t.h2_a));
-    t.c_grad = mean_r(sum_l(t.vf - t.v2_a));
+    t.b_grad = bias_batch_mean_4d(t.h1_a - t.h2_a);
+    t.c_grad = bias_batch_mean_4d(t.vf - t.v2_a);
 
     nan_check_deep(t.w_grad);
     nan_check_deep(t.b_grad);
@@ -445,7 +432,7 @@ void train_convolutional(InputBatch& input_batch, ExpectedBatch& expected_batch,
     t.q_global_batch = mean(t.h2_a);
 
     if constexpr (rbm_layer_traits<rbm_t>::sparsity_method() == sparsity_method::LOCAL_TARGET) {
-        t.q_local_batch = mean_l(t.h2_a);
+        t.q_local_batch = bias_batch_mean_2d(t.h2_a);
     }
 
     //Compute the biases for sparsity
