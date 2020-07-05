@@ -23,19 +23,19 @@ int main(int /*argc*/, char* /*argv*/ []) {
     // Build the network
 
     using network_t = dll::dyn_network_desc<
-        dll::network_layers<
-            dll::conv_layer<1, 28, 28, 8, 5, 5>,
-            dll::mp_2d_layer<8, 24, 24, 2, 2>,
-            dll::conv_layer<8, 12, 12, 8, 5, 5>,
-            dll::mp_2d_layer<8, 8, 8, 2, 2>,
-            dll::dense_layer<8 * 4 * 4, 150>,
-            dll::dense_layer<150, 10, dll::softmax>
-        >
-        , dll::updater<dll::updater_type::NADAM>     // Momentum
-        , dll::batch_size<200>                       // The mini-batch size
-        , dll::shuffle                               // Shuffle the dataset before each epoch
-        , dll::no_batch_display
-        , dll::no_epoch_error
+            dll::network_layers<
+                    dll::conv_layer<1, 28 * SCALE_FACTOR, 28 * SCALE_FACTOR, 8, 5, 5>,
+                    dll::mp_2d_layer<8, 24 * SCALE_FACTOR, 24 * SCALE_FACTOR, 2, 2>,
+                    dll::conv_layer<8, 12 * SCALE_FACTOR, 12 * SCALE_FACTOR, 8, 5, 5>,
+                    dll::mp_2d_layer<8, 8<, 8, 2, 2>,
+                    dll::dense_layer<8 * 4 * 4, 150>,
+                    dll::dense_layer<150, 10, dll::softmax>
+            >
+            , dll::updater<dll::updater_type::NADAM>     // Momentum
+            , dll::batch_size<200>                       // The mini-batch size
+            , dll::shuffle                               // Shuffle the dataset before each epoch
+            , dll::no_batch_display
+            , dll::no_epoch_error
     >::network_t;
 
     auto net = std::make_unique<network_t>();

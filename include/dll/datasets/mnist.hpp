@@ -9,7 +9,7 @@
 
 #include "mnist/mnist_reader.hpp"
 
-#define SCALE_FACTOR 4
+#define SCALE_FACTOR 2
 
 namespace dll {
 
