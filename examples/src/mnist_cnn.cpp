@@ -8,8 +8,6 @@
 #define ETL_COUNTERS
 #define ETL_GPU_POOL
 
-#define SCALE_FACTOR 2
-
 #include "dll/neural/conv/conv_layer.hpp"
 #include "dll/neural/dense/dense_layer.hpp"
 #include "dll/pooling/mp_layer.hpp"
@@ -18,11 +16,27 @@
 
 int main(int /*argc*/, char* /*argv*/ []) {
     // Load the dataset
-    auto dataset = dll::make_mnist_dataset(dll::batch_size<200>{}, dll::scale_pre<255>{});
+    auto dataset = dll::make_mnist_dataset(dll::batch_size<256>{}, dll::scale_pre<255>{});
 
     // Build the network
 
     using network_t = dll::dyn_network_desc<
+            dll::network_layers<
+                    dll::conv_layer<1, 28 * SCALE_FACTOR, 28 * SCALE_FACTOR, 16, 5, 5>,
+                    dll::mp_2d_layer<16, 28 * SCALE_FACTOR - 4, 28 * SCALE_FACTOR - 4, 2, 2>,
+                    dll::conv_layer<16, (28 * SCALE_FACTOR - 4) / 2, (28 * SCALE_FACTOR - 4) / 2, 16, 5, 5>,
+                    dll::mp_2d_layer<16, (28 * SCALE_FACTOR - 4) / 2 - 4, (28 * SCALE_FACTOR - 4) / 2 - 4, 2, 2>,
+                    dll::dense_layer<16 * ((28 * SCALE_FACTOR - 4) / 2 - 4) / 2 * ((28 * SCALE_FACTOR - 4) / 2 - 4) / 2, 256>,
+                    dll::dense_layer<256, 10, dll::softmax>
+            >
+            , dll::updater<dll::updater_type::ADADELTA>  // Momentum
+            , dll::batch_size<256>                       // The mini-batch size
+            , dll::shuffle                               // Shuffle the dataset before each epoch
+            , dll::no_batch_display
+            , dll::no_epoch_error
+    >::network_t;
+
+    /*using network_t = dll::dyn_network_desc<
         dll::network_layers<
             dll::conv_layer<1, 28, 28, 8, 5, 5>,
             dll::mp_2d_layer<8, 24, 24, 2, 2>,
@@ -36,7 +50,7 @@ int main(int /*argc*/, char* /*argv*/ []) {
         , dll::shuffle                               // Shuffle the dataset before each epoch
         , dll::no_batch_display
         , dll::no_epoch_error
-    >::network_t;
+    >::network_t;*/
 
     auto net = std::make_unique<network_t>();
 

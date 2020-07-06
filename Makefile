@@ -329,8 +329,6 @@ $(eval $(call add_executable,dll_mnist_mlp,examples/src/mnist_mlp.cpp))
 $(eval $(call add_executable_set,dll_mnist_mlp,dll_mnist_mlp))
 $(eval $(call add_executable,dll_mnist_cnn,examples/src/mnist_cnn.cpp))
 $(eval $(call add_executable_set,dll_mnist_cnn,dll_mnist_cnn))
-$(eval $(call add_executable,dll_mnist_cnn_big_upscaled,examples/src/mnist_cnn_big_upscaled.cpp))
-$(eval $(call add_executable_set,dll_mnist_cnn_big_upscaled,dll_mnist_cnn_big_upscaled))
 $(eval $(call add_executable,dll_mnist_ae,examples/src/mnist_ae.cpp))
 $(eval $(call add_executable_set,dll_mnist_ae,dll_mnist_ae))
 $(eval $(call add_executable,dll_mnist_deep_ae,examples/src/mnist_deep_ae.cpp))
@@ -357,7 +355,7 @@ release_workbench: release/bin/dll_sgd_perf release/bin/dll_conv_sgd_perf releas
 # Build sets for the examples
 debug_examples: debug/bin/dll_mnist_mlp debug/bin/dll_mnist_cnn debug/bin/dll_mnist_ae debug/bin/dll_mnist_deep_ae debug/bin/dll_mnist_dbn
 release_debug_examples: release_debug/bin/dll_mnist_mlp release_debug/bin/dll_mnist_cnn release_debug/bin/dll_mnist_ae release_debug/bin/dll_mnist_deep_ae release_debug/bin/dll_mnist_dbn
-release_examples: release/bin/dll_mnist_mlp release/bin/dll_mnist_cnn release/bin/dll_mnist_ae release/bin/dll_mnist_deep_ae release/bin/dll_mnist_dbn release/bin/dll_mnist_cnn_big_upscaled
+release_examples: release/bin/dll_mnist_mlp release/bin/dll_mnist_cnn release/bin/dll_mnist_ae release/bin/dll_mnist_deep_ae release/bin/dll_mnist_dbn
 
 # Build sets for perf examples
 debug_examples_perf: debug/bin/dll_mnist_mlp_perf debug/bin/dll_mnist_cnn_perf debug/bin/dll_mnist_ae_perf debug/bin/dll_mnist_deep_ae_perf debug/bin/dll_mnist_dbn_perf
